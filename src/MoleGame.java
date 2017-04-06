@@ -1,4 +1,3 @@
-import java.io.Console;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -9,16 +8,21 @@ import java.util.concurrent.TimeUnit;
 
 public class MoleGame extends Thread {
 
-    private static int max_available = 4;
+    public static int max_available = 8;
     private int index;
-    private static int hit = 0;
-    private static int miss = 0;
-    private char letter;
-    public static final Semaphore sem = new Semaphore(max_available);
-    private static int rowSize = 5;
-    private static int columnSize = 5;
+    public static int hit = 0;
+    public static int miss = 0;
+    public char letter;
+    public static Semaphore sem = new Semaphore(max_available);
+    public static int rowSize = 4;
+    public static int columnSize = 4;
+    public static int totalMoles = rowSize * columnSize;
     public static volatile List<String> board = new ArrayList<>();
     public static volatile boolean playing = true;
+    public static int popUpUpper = 0;
+    public static int popUpLower = 0;
+    public static int hideLower = 0;
+    public static int hideUpper = 0;
 
     MoleGame(int index, char letter) {
         this.index = index;
@@ -30,88 +34,23 @@ public class MoleGame extends Thread {
         Random rand = new Random();
         while (playing){
             try{
-                int popUp = rand.nextInt(1500) + 1000;
-                int hide = rand.nextInt(5) + 1;
+                int popUp = rand.nextInt(popUpUpper) + popUpLower;
+                int hide = rand.nextInt(hideUpper) + hideLower;
 
                 TimeUnit.SECONDS.sleep(hide);
                 sem.acquire();
                 board.set(index, String.valueOf(letter));
                 System.out.print("\033[H\033[2J");
                 System.out.flush();
-                printBoard();
 
                 TimeUnit.MILLISECONDS.sleep(popUp);
-                board.set(index, " ");
+                board.set(index, "");
                 System.out.print("\033[H\033[2J");
                 System.out.flush();
-                printBoard();
                 sem.release();
             }
             catch (Exception e){
                 System.out.println(e);
-            }
-        }
-    }
-
-    public static void printBoard(){
-        int moleIndex = 0;
-        char escCode = 0x1B;
-        //Print board
-        for (int i = 0; i < rowSize; i++) {
-            for (int j = 0; j < columnSize; j++) {
-                //System.out.print(String.format("%c[%d;%df",escCode,0,1));
-                System.out.print(board.get(moleIndex));
-                moleIndex++;
-            }
-            System.out.print("\n");
-        }
-        System.out.println("Hit: " + hit);
-        System.out.println("Miss: " + miss);
-        System.out.print("Enter mole to hit: ");
-    }
-
-    public static void main(String[] args) {
-        int totalMoles = rowSize * columnSize;
-        Scanner scanner = new Scanner(System.in);
-
-        //Initialize empty board
-        for (int i = 0; i < totalMoles; i++) {
-            board.add(" ");
-        }
-
-        //Create mole threads
-        char letter = 'a';
-        for(int i = 0; i < totalMoles; i++){
-            Thread t = new MoleGame(i, letter);
-            t.start();
-            letter++;
-        }
-
-        //Print empty board
-        try{
-            System.out.print("\033[H\033[2J");
-            System.out.flush();
-            printBoard();
-        }
-        catch (Exception e){
-            System.out.print(e);
-        }
-
-        //Read user input
-        while (playing){
-            String str = scanner.next();
-            if(board.contains(str)){
-                hit++;
-                board.set(board.indexOf(str), " ");
-                System.out.print("\033[H\033[2J");
-                System.out.flush();
-                printBoard();
-            }
-            else if(str.equals("quit")){
-                playing = false;
-            }
-            else{
-                miss++;
             }
         }
     }
